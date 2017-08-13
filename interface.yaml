@@ -1,0 +1,2 @@
+name: storpool-config
+description: Trivial interface informing other charms of StorPool being configured.
