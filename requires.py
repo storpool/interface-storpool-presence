@@ -1,4 +1,5 @@
 import json
+import platform
 import re
 import time
 import subprocess
@@ -11,6 +12,7 @@ def rdebug(s):
 
 class StorPoolRepoRequires(reactive.RelationBase):
 	scope = reactive.scopes.UNIT
+	sp_node = platform.node()
 
 	@reactive.hook('{requires:storpool-config}-relation-{joined,changed}')
 	def changed(self):
@@ -25,20 +27,30 @@ class StorPoolRepoRequires(reactive.RelationBase):
 			rdebug('whee, we got something from the {key} conversation, trying to deserialize it'.format(key=conv.key))
 			try:
 				conf = json.loads(spconf)
-				rdebug('got something: type {t}, value {conf}'.format(t=type(conf).__name__, conf=conf))
+				rdebug('got something: type {t}, dict keys: {k}'.format(t=type(conf).__name__, k=sorted(conf.keys()) if isinstance(conf, dict) else []))
+				if not isinstance(conf, dict):
+					rdebug('well, it is not a dictionary, is it?')
+					conv.set_local('storpool-config', None)
+					return
 				conv.set_local('storpool-config', conf)
-				self.set_state('{relation_name}.available')
+				if self.sp_node in conf:
+					rdebug('we have some configuration for our node!')
+					self.set_state('{relation_name}.available')
 			except Exception as e:
-				rdebug('oof, could not parse the config passed down the hook')
+				rdebug('oof, could not parse the config passed down the hook: {e}'.format(e=e))
 				conv.set_local('storpool-config', None)
 
 	@reactive.hook('{requires:storpool-config}-relation-departed')
 	def departed(self):
-		rdebug('oof, departed invoked')
 		conv = self.conversation()
-		rdebug('conv is {conv}'.format(conv=conv))
+		c = conv.get_local('storpool-config')
+		if c is not None and isinstance(c, dict):
+			ks = sorted(c.keys())
+			rdebug('oof, departed invoked for {ks}'.format(ks=ks))
+			if self.sp_node in ks:
+				rdebug('...and it was on our node, no less')
+				self.remove_state('{relation_name}.available')
 		conv.set_local('storpool-config', None)
-		self.remove_state('{relation_name}.available')
 	
 	def get_storpool_config(self):
 		cfg = None
@@ -46,16 +58,12 @@ class StorPoolRepoRequires(reactive.RelationBase):
 			ncfg = conv.get_local('storpool-config')
 			if ncfg is not None:
 				nkeys = list(sorted(ncfg.keys()))
-				rdebug('got some config from the {key} conversation; keys: {nkeys}'.format(key=conv.key, nkeys=nkeys))
+				rdebug('get_storpool_config(): {key}: {ks}'.format(key=conv.key, ks=nkeys))
 				if cfg is not None:
 					for key in nkeys:
-						if key in cfg:
-							rdebug('oof, double config for key {key}, will override'.format(key=key))
 						cfg[key] = ncfg[key]
 				else:
-					rdebug('stashing what we just got')
 					cfg = ncfg
-		rdebug('and in the end, cfg is {xnot}None'.format(xnot='' if cfg is None else 'not '))
 		if cfg is not None:
-			rdebug('...and returning keys: {ks}'.format(ks=sorted(cfg.keys())))
+			rdebug('get_storpool_config() returning keys: {ks}'.format(ks=sorted(cfg.keys())))
 		return cfg
