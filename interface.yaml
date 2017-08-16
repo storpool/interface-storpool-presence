@@ -1,2 +1,2 @@
-name: storpool-config
-description: Trivial interface informing other charms of StorPool being configured.
+name: storpool-presence
+description: Trivial interface informing other charms of the presence of StorPool units
