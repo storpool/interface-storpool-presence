@@ -4,9 +4,11 @@ import time
 
 from charms import reactive
 
+
 def rdebug(s):
     with open('/tmp/storpool-charms.log', 'a') as f:
         print('{tm} [storpool-presence-requires] {s}'.format(tm=time.ctime(), s=s), file=f)
+
 
 class StorPoolPresenceRequires(reactive.RelationBase):
     scope = reactive.scopes.GLOBAL
