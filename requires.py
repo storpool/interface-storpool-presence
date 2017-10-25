@@ -1,3 +1,7 @@
+"""
+A Juju charm interface for keeping track of the state of another charm's
+units, esp. the state of the unit running on the local node.
+"""
 import json
 import platform
 
@@ -7,15 +11,25 @@ from spcharms import utils as sputils
 
 
 def rdebug(s):
+    """
+    Pass the diagnostic message string `s` to the central diagnostic logger.
+    """
     sputils.rdebug(s, prefix='storpool-presence-requires')
 
 
 class StorPoolPresenceRequires(reactive.RelationBase):
+    """
+    Receive notifications for another charm's units state.
+    """
     scope = reactive.scopes.GLOBAL
     sp_node = platform.node()
 
     @reactive.hook('{requires:storpool-presence}-relation-{joined,changed}')
     def changed(self):
+        """
+        Handle a notification and set the "*.configure" state if the unit
+        running on the local node has been set up.
+        """
         rdebug('relation-joined/changed invoked')
         conv = self.conversation()
         spconf = conv.get_remote('storpool_presence')
