@@ -1,14 +1,13 @@
 import json
 import platform
-import time
 
 from charms import reactive
 
+from spcharms import utils as sputils
+
 
 def rdebug(s):
-    with open('/tmp/storpool-charms.log', 'a') as f:
-        print('{tm} [storpool-presence-requires] {s}'
-              .format(tm=time.ctime(), s=s), file=f)
+    sputils.rdebug(s, prefix='storpool-presence-requires')
 
 
 class StorPoolPresenceRequires(reactive.RelationBase):

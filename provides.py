@@ -1,11 +1,10 @@
-import time
-
 from charms import reactive
+
+from spcharms import utils as sputils
 
 
 def rdebug(s):
-    with open('/tmp/storpool-charms.log', 'a') as f:
-        print('{tm} [storpool-presence-provides] {s}'.format(tm=time.ctime(), s=s), file=f)
+    sputils.rdebug(s, prefix='storpool-presence-provides')
 
 
 class StorPoolPresenceProvides(reactive.RelationBase):
