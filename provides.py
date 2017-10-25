@@ -13,5 +13,6 @@ class StorPoolPresenceProvides(reactive.RelationBase):
 
     @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
     def changed(self):
-        rdebug('relation-joined/changed, setting the notify state to kick something off')
+        rdebug('relation-joined/changed, setting the notify state to '
+               'kick something off')
         self.set_state('{relation_name}.notify')
