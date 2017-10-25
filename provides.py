@@ -1,9 +1,6 @@
-import json
 import time
 
 from charms import reactive
-
-from charmhelpers.core import hookenv
 
 def rdebug(s):
     with open('/tmp/storpool-charms.log', 'a') as f:

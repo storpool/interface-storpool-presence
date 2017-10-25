@@ -1,8 +1,6 @@
 import json
 import platform
-import re
 import time
-import subprocess
 
 from charms import reactive
 
