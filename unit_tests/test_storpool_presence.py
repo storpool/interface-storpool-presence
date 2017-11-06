@@ -7,7 +7,7 @@ A set of unit tests for the storpool-presence interface.
 import os
 import platform
 import sys
-import testtools
+import unittest
 
 import json
 import mock
@@ -27,7 +27,7 @@ import provides as testee_provides
 import requires as testee_requires
 
 
-class TestStorPoolPresence(testtools.TestCase):
+class TestStorPoolPresence(unittest.TestCase):
     """
     Test the data exchanged by the storpool-presence interface.
     """
