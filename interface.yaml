@@ -1,3 +1,4 @@
 name: storpool-presence
 description: Trivial interface informing other charms of the presence of StorPool units
+ignore: ['unit_tests']
 exclude: ['unit_tests']
