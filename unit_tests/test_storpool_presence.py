@@ -114,14 +114,51 @@ class TestStorPoolPresence(unittest.TestCase):
         # Not a JSON object
         check_bad('[5]')
 
-        # An empty dictionary
-        check_good({})
+        # An empty dictionary (no "presence" sub-dictionary)
+        check_bad({})
+
+        # An empty presence dictionary
+        check_good({'presence': {}})
 
         # A dictionary without us in it
-        check_good({"invalid node name": True, "some other node": False})
+        check_good({
+            'presence': {
+                "invalid node name": True,
+                "some other node": False
+            },
+        })
 
         # A dictionary with us in it, but with a false value
-        check_good({sp_node: False})
+        check_good({
+            'presence': {
+                sp_node: False,
+            },
+        })
 
-        # And finally, a dictionary with us *really* in it!
-        check_wonderful({sp_node: True})
+        # A dictionary with us really in it...
+        check_good({
+            'presence': {
+                sp_node: True,
+            },
+        })
+
+        # A dictionary with us really in it...
+        # ...and still no other data
+        check_good({
+            'presence': {
+                sp_node: True,
+            },
+            'storpool_conf': '',
+            'storpool_version': '',
+            'storpool_openstack_version': '',
+        })
+
+        # And finally, a dictionary with everything in it!
+        check_wonderful({
+            'presence': {
+                sp_node: True,
+            },
+            'storpool_conf': 'whee',
+            'storpool_version': '16.02',
+            'storpool_openstack_version': '0.1.0',
+        })

@@ -9,6 +9,11 @@ from charms import reactive
 
 from spcharms import utils as sputils
 
+STORPOOL_CONF_KEYS = (
+    'storpool_conf',
+    'storpool_version',
+    'storpool_openstack_version',
+)
 
 def rdebug(s):
     """
@@ -49,8 +54,22 @@ class StorPoolPresenceRequires(reactive.RelationBase):
                     rdebug('well, it is not a dictionary, is it?')
                     conv.set_local('storpool_presence', None)
                     return
+                presence = conf.get('presence', None)
+                if not isinstance(presence, dict):
+                    rdebug('no presence data, just {keys}'
+                        .format(keys=','.join(sorted(conf.keys()))))
+                    conv.set_local('storpool_presence', None)
+                    return
+                rdebug('configured nodes: {nodes}'
+                       .format(nodes=','.join(sorted(presence.keys()))))
                 conv.set_local('storpool_presence', conf)
-                if conf.get(self.sp_node, False):
+
+                for key in STORPOOL_CONF_KEYS:
+                    data = conf.get(key, None)
+                    if data is None or data == '':
+                        rdebug('- {key} not supplied yet'.format(key=key))
+                        return
+                if presence.get(self.sp_node, False):
                     rdebug('our node seems to be configured!')
                     self.set_state('{relation_name}.configure')
             except Exception as e:
