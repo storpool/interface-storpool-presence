@@ -38,9 +38,10 @@ class StorPoolPresenceRequires(reactive.RelationBase):
         rdebug('relation-joined/changed invoked')
         conv = self.conversation()
         spconf = conv.get_remote('storpool_presence')
+        conv.set_local('storpool_presence', None)
+        reset = False
         if spconf is None:
             rdebug('no presence data yet')
-            conv.set_local('storpool_presence', None)
         else:
             rdebug('whee, we got something from the {key} conversation, '
                    'trying to deserialize it'.format(key=conv.key))
@@ -52,17 +53,16 @@ class StorPoolPresenceRequires(reactive.RelationBase):
                                else []))
                 if not isinstance(conf, dict):
                     rdebug('well, it is not a dictionary, is it?')
-                    conv.set_local('storpool_presence', None)
                     return
                 presence = conf.get('presence', None)
                 if not isinstance(presence, dict):
                     rdebug('no presence data, just {keys}'
                         .format(keys=','.join(sorted(conf.keys()))))
-                    conv.set_local('storpool_presence', None)
                     return
                 rdebug('configured nodes: {nodes}'
                        .format(nodes=','.join(sorted(presence.keys()))))
                 conv.set_local('storpool_presence', conf)
+                reset = True
 
                 for key in STORPOOL_CONF_KEYS:
                     data = conf.get(key, None)
@@ -75,4 +75,5 @@ class StorPoolPresenceRequires(reactive.RelationBase):
             except Exception as e:
                 rdebug('oof, could not parse the presence data passed down '
                        'the hook: {e}'.format(e=e))
-                conv.set_local('storpool_presence', None)
+                if reset:
+                    conv.set_local('storpool_presence', None)

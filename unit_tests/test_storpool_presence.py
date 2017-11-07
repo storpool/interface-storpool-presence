@@ -64,13 +64,16 @@ class TestStorPoolPresence(unittest.TestCase):
         req_conv.return_value = conv
 
         self.loop_index = 0
+        self.good_index = 0
 
-        def check_something(supplied, expected, state_inc):
+        def check_something(supplied, expected, good, state_inc):
             """
             Invoke the "relationship changed" handler, passing the specified
             data as if it has arrived from the remote peer.
             """
             self.loop_index += 1
+            if good:
+                self.good_index += 1
             conv.get_remote.return_value = supplied
             self.local_state = []
             state_count = set_state.call_count
@@ -78,9 +81,16 @@ class TestStorPoolPresence(unittest.TestCase):
             obj.changed()
 
             self.assertEquals(self.loop_index, conv.get_remote.call_count)
-            self.assertEquals(self.loop_index, conv.set_local.call_count)
-            self.assertEquals([('storpool_presence', expected)],
-                              self.local_state)
+            self.assertEquals(self.loop_index + self.good_index,
+                              conv.set_local.call_count)
+            if expected is None:
+                self.assertEquals([('storpool_presence', expected)],
+                                  self.local_state)
+            else:
+                self.assertEquals([
+                    ('storpool_presence', None),
+                    ('storpool_presence', expected),
+                ], self.local_state)
             self.assertEquals(state_count + state_inc, set_state.call_count)
 
         def check_bad(spconf):
@@ -88,7 +98,14 @@ class TestStorPoolPresence(unittest.TestCase):
             Check that missing or invalid remote configuration does not
             actually trigger any local events.
             """
-            check_something(spconf, None, 0)
+            check_something(spconf, None, False, 0)
+
+        def check_half_bad(spconf):
+            """
+            Check that missing StorPool keys in the received configuration
+            do not actually trigger any local events.
+            """
+            check_something(json.dumps(spconf), None, False, 0)
 
         def check_good(spdict):
             """
@@ -96,14 +113,14 @@ class TestStorPoolPresence(unittest.TestCase):
             presence information about our own Juju node still does not
             trigger any local events, but is stored properly.
             """
-            check_something(json.dumps(spdict), spdict, 0)
+            check_something(json.dumps(spdict), spdict, True, 0)
 
         def check_wonderful(spdict):
             """
             Check that a well-formed remote configuration that has our node in
             it goes the whole way.
             """
-            check_something(json.dumps(spdict), spdict, 1)
+            check_something(json.dumps(spdict), spdict, True, 1)
 
         # No configuration at all supplied
         check_bad(None)
@@ -115,7 +132,7 @@ class TestStorPoolPresence(unittest.TestCase):
         check_bad('[5]')
 
         # An empty dictionary (no "presence" sub-dictionary)
-        check_bad({})
+        check_half_bad({})
 
         # An empty presence dictionary
         check_good({'presence': {}})
