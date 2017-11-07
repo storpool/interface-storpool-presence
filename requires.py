@@ -27,7 +27,6 @@ class StorPoolPresenceRequires(reactive.RelationBase):
     Receive notifications for another charm's units state.
     """
     scope = reactive.scopes.GLOBAL
-    sp_node = platform.node()
 
     @reactive.hook('{requires:storpool-presence}-relation-{joined,changed}')
     def changed(self):
@@ -69,7 +68,7 @@ class StorPoolPresenceRequires(reactive.RelationBase):
                     if data is None or data == '':
                         rdebug('- {key} not supplied yet'.format(key=key))
                         return
-                if presence.get(self.sp_node, False):
+                if presence.get(sputils.get_parent_node(), False):
                     rdebug('our node seems to be configured!')
                     self.set_state('{relation_name}.configure')
             except Exception as e:

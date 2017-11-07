@@ -5,7 +5,6 @@ A set of unit tests for the storpool-presence interface.
 """
 
 import os
-import platform
 import sys
 import unittest
 
@@ -22,6 +21,7 @@ lib_path = os.path.realpath('unit_tests/lib')
 if lib_path not in sys.path:
     sys.path.insert(0, lib_path)
 
+from spcharms import utils as sputils
 
 import provides as testee_provides
 import requires as testee_requires
@@ -48,10 +48,9 @@ class TestStorPoolPresence(unittest.TestCase):
         """
         Test that the requires interface tries to exchange data.
         """
-        sp_node = platform.node()
+        sp_node = sputils.MACHINE_ID
 
         obj = testee_requires.StorPoolPresenceRequires('storpool-presence:42')
-        self.assertEquals(obj.sp_node, sp_node)
 
         def set_local_state(name, value):
             """
