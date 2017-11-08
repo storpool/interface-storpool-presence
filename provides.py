@@ -3,7 +3,9 @@ A Juju charm interface for informing another charm of the state of this
 charm's units, esp. the unit running on the local node.
 """
 from charms import reactive
+from charmhelpers.core import unitdata
 
+from spcharms import kvdata
 from spcharms import utils as sputils
 
 
@@ -29,3 +31,20 @@ class StorPoolPresenceProvides(reactive.RelationBase):
         rdebug('relation-joined/changed, setting the notify state to '
                'kick something off')
         self.set_state('{relation_name}.notify')
+
+        conv = self.conversation()
+        mach_id = conv.get_remote('cinder_machine_id')
+        if mach_id is not None:
+            rdebug('- got a Cinder machine id: {cid}'.format(cid=mach_id))
+            parts = mach_id.split('/')
+            if len(parts) == 3 and parts[1] == 'lxd':
+                rdebug('- and it is a container...')
+                if parts[0] == sputils.get_machine_id():
+                    rdebug('- and it is ours!')
+                    unitdata.kv().set(kvdata.KEY_LXD_NAME, mach_id)
+                    self.set_state('{relation_name}.process-lxd-name')
+                else:
+                    rdebug('- but it is not ours ({mid} vs {oid})'
+                           .format(mid=mach_id, oid=sputils.get_machine_id()))
+            else:
+                rdebug('- but it is not a container')

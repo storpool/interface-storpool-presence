@@ -62,6 +62,9 @@ class StorPoolPresenceRequires(reactive.RelationBase):
                        .format(nodes=','.join(sorted(presence.keys()))))
                 conv.set_local('storpool_presence', conf)
                 reset = True
+                
+                # Let them know we're here.
+                conv.set_remote('cinder_machine_id', sputils.get_machine_id())
 
                 for key in STORPOOL_CONF_KEYS:
                     data = conf.get(key, None)
