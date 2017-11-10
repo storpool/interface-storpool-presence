@@ -37,7 +37,7 @@ class TestStorPoolPresence(unittest.TestCase):
         Test that the provider interface sets a reactive state.
         """
         obj = testee_provides.StorPoolPresenceProvides('storpool-presence:42')
-        obj.changed()
+        obj.changed(False)
         set_state.assert_called_once_with('{relation_name}.notify')
 
         # That's all, folks!

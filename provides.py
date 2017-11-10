@@ -23,7 +23,20 @@ class StorPoolPresenceProvides(reactive.RelationBase):
     scope = reactive.scopes.GLOBAL
 
     @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
-    def changed(self):
+    def changed_new(self):
+        """
+        Somebody new came in, announce our presence to them if able.
+        """
+        self.changed(True)
+
+    @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
+    def changed_current(self):
+        """
+        Somebody we already know... but still, announce, maybe?
+        """
+        self.changed(False)
+
+    def changed(self, joined):
         """
         Let the other layers know that another charm wants to receive
         notifications from us.
@@ -31,6 +44,8 @@ class StorPoolPresenceProvides(reactive.RelationBase):
         rdebug('relation-joined/changed, setting the notify state to '
                'kick something off')
         self.set_state('{relation_name}.notify')
+        if joined:
+            self.set_state('{relation_name}.notify-joined')
 
         conv = self.conversation()
         mach_id = conv.get_remote('cinder_machine_id')
