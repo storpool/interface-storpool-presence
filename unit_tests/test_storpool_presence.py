@@ -172,7 +172,9 @@ class TestStorPoolPresence(unittest.TestCase):
         # And finally, a dictionary with everything in it!
         check_wonderful({
             'presence': {
-                sp_node: True,
+                'block': {
+                    sp_node: True,
+                },
             },
             'storpool_conf': 'whee',
             'storpool_version': '16.02',
