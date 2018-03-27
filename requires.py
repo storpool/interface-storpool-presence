@@ -6,9 +6,7 @@ import json
 import platform
 
 from charms import reactive
-from charmhelpers.core import unitdata
 
-from spcharms import kvdata
 from spcharms import service_hook
 from spcharms import utils as sputils
 
