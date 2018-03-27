@@ -7,13 +7,8 @@ import platform
 
 from charms import reactive
 
+from spcharms import service_hook
 from spcharms import utils as sputils
-
-STORPOOL_CONF_KEYS = (
-    'storpool_conf',
-    'storpool_version',
-    'storpool_openstack_version',
-)
 
 def rdebug(s):
     """
@@ -34,48 +29,13 @@ class StorPoolPresenceRequires(reactive.RelationBase):
         Handle a notification and set the "*.configure" state if the unit
         running on the local node has been set up.
         """
-        rdebug('relation-joined/changed invoked')
-        conv = self.conversation()
-        spconf = conv.get_remote('storpool_presence')
-        conv.set_local('storpool_presence', None)
-        reset = False
-        if spconf is None:
-            rdebug('no presence data yet')
-        else:
-            rdebug('whee, we got something from the {key} conversation, '
-                   'trying to deserialize it'.format(key=conv.key))
-            try:
-                conf = json.loads(spconf)
-                rdebug('got something: type {t}, dict keys: {k}'
-                       .format(t=type(conf).__name__,
-                               k=sorted(conf.keys()) if isinstance(conf, dict)
-                               else []))
-                if not isinstance(conf, dict):
-                    rdebug('well, it is not a dictionary, is it?')
-                    return
-                presence = conf.get('presence', None)
-                if not isinstance(presence, dict):
-                    rdebug('no presence data, just {keys}'
-                        .format(keys=','.join(sorted(conf.keys()))))
-                    return
-                rdebug('configured nodes: {nodes}'
-                       .format(nodes=','.join(sorted(presence.keys()))))
-                conv.set_local('storpool_presence', conf)
-                reset = True
-                
-                # Let them know we're here.
-                conv.set_remote('cinder_machine_id', sputils.get_machine_id())
+        rdebug('storpool-presence relation-joined/changed invoked')
+        service_hook.handle_remote_presence(self, rdebug=rdebug)
 
-                for key in STORPOOL_CONF_KEYS:
-                    data = conf.get(key, None)
-                    if data is None or data == '':
-                        rdebug('- {key} not supplied yet'.format(key=key))
-                        return
-                if presence.get(sputils.get_parent_node(), False):
-                    rdebug('our node seems to be configured!')
-                    self.set_state('{relation_name}.configure')
-            except Exception as e:
-                rdebug('oof, could not parse the presence data passed down '
-                       'the hook: {e}'.format(e=e))
-                if reset:
-                    conv.set_local('storpool_presence', None)
+    @reactive.hook('{requires:storpool-presence}-relation-{departed,broken}')
+    def broken(self):
+        """
+        Remove the "we are here" state.
+        """
+        rdebug('storpool-presence relation-departed/broken invoked')
+        self.remove_state('{relation_name}.notify')

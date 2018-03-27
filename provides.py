@@ -5,7 +5,7 @@ charm's units, esp. the unit running on the local node.
 from charms import reactive
 from charmhelpers.core import unitdata
 
-from spcharms import kvdata
+from spcharms import service_hook
 from spcharms import utils as sputils
 
 
@@ -23,43 +23,17 @@ class StorPoolPresenceProvides(reactive.RelationBase):
     scope = reactive.scopes.GLOBAL
 
     @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
-    def changed_new(self):
+    def changed(self):
         """
-        Somebody new came in, announce our presence to them if able.
+        Somebody came in or gave us new data.
         """
-        self.changed(True)
+        rdebug('storpool-presence/changed invoked')
+        service_hook.handle_remote_presence(self, rdebug=rdebug)
 
-    @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
-    def changed_current(self):
+    @reactive.hook('{provides:storpool-presence}-relation-{departed,broken}')
+    def broken(self):
         """
-        Somebody we already know... but still, announce, maybe?
+        Let it go...
         """
-        self.changed(False)
-
-    def changed(self, joined):
-        """
-        Let the other layers know that another charm wants to receive
-        notifications from us.
-        """
-        rdebug('relation-joined/changed, setting the notify state to '
-               'kick something off')
-        self.set_state('{relation_name}.notify')
-        if joined:
-            self.set_state('{relation_name}.notify-joined')
-
-        conv = self.conversation()
-        mach_id = conv.get_remote('cinder_machine_id')
-        if mach_id is not None:
-            rdebug('- got a Cinder machine id: {cid}'.format(cid=mach_id))
-            parts = mach_id.split('/')
-            if len(parts) == 3 and parts[1] == 'lxd':
-                rdebug('- and it is a container...')
-                if parts[0] == sputils.get_machine_id():
-                    rdebug('- and it is ours!')
-                    unitdata.kv().set(kvdata.KEY_LXD_NAME, mach_id)
-                    self.set_state('{relation_name}.process-lxd-name')
-                else:
-                    rdebug('- but it is not ours ({mid} vs {oid})'
-                           .format(mid=mach_id, oid=sputils.get_machine_id()))
-            else:
-                rdebug('- but it is not a container')
+        rdebug('storpool-presence/departed invoked')
+        self.remove_state('{relation_name}.notify')
