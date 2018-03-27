@@ -50,7 +50,6 @@ class TestStorPoolPresence(unittest.TestCase):
         """
         Test the data exchanged by the provides or requires interface.
         """
-        obj = testee_provides.StorPoolPresenceProvides('storpool-presence:42')
         obj.remove_state = mock.Mock()
         call_c = self.get_call_count(obj)
 

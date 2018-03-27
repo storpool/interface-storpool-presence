@@ -33,7 +33,7 @@ class StorPoolPresenceRequires(reactive.RelationBase):
         service_hook.handle_remote_presence(self, rdebug=rdebug)
 
     @reactive.hook('{requires:storpool-presence}-relation-{departed,broken}')
-    def changed(self):
+    def broken(self):
         """
         Remove the "we are here" state.
         """
