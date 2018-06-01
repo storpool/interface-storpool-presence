@@ -28,54 +28,31 @@ class StorPoolPresenceRequires(reactive.RelationBase):
     """
     scope = reactive.scopes.GLOBAL
 
-    @reactive.hook('{requires:storpool-presence}-relation-{joined,changed}')
-    def changed(self):
+    @reactive.hook('{requires:storpool-presence}-relation-joined')
+    def joined(self):
         """
-        Handle a notification and set the "*.configure" state if the unit
-        running on the local node has been set up.
+        Somebody new came in, announce our presence to them if able.
         """
         rdebug('relation-joined/changed invoked')
-        conv = self.conversation()
-        spconf = conv.get_remote('storpool_presence')
-        conv.set_local('storpool_presence', None)
-        reset = False
-        if spconf is None:
-            rdebug('no presence data yet')
-        else:
-            rdebug('whee, we got something from the {key} conversation, '
-                   'trying to deserialize it'.format(key=conv.key))
-            try:
-                conf = json.loads(spconf)
-                rdebug('got something: type {t}, dict keys: {k}'
-                       .format(t=type(conf).__name__,
-                               k=sorted(conf.keys()) if isinstance(conf, dict)
-                               else []))
-                if not isinstance(conf, dict):
-                    rdebug('well, it is not a dictionary, is it?')
-                    return
-                presence = conf.get('presence', None)
-                if not isinstance(presence, dict):
-                    rdebug('no presence data, just {keys}'
-                        .format(keys=','.join(sorted(conf.keys()))))
-                    return
-                rdebug('configured nodes: {nodes}'
-                       .format(nodes=','.join(sorted(presence.keys()))))
-                conv.set_local('storpool_presence', conf)
-                reset = True
-                
-                # Let them know we're here.
-                conv.set_remote('cinder_machine_id', sputils.get_machine_id())
+        self.set_state('{relation_name}.present')
+        self.set_state('{relation_name}.notify')
+        self.set_state('{relation_name}.notify-new')
 
-                for key in STORPOOL_CONF_KEYS:
-                    data = conf.get(key, None)
-                    if data is None or data == '':
-                        rdebug('- {key} not supplied yet'.format(key=key))
-                        return
-                if presence.get(sputils.get_parent_node(), False):
-                    rdebug('our node seems to be configured!')
-                    self.set_state('{relation_name}.configure')
-            except Exception as e:
-                rdebug('oof, could not parse the presence data passed down '
-                       'the hook: {e}'.format(e=e))
-                if reset:
-                    conv.set_local('storpool_presence', None)
+    @reactive.hook('{requires:storpool-presence}-relation-changed')
+    def changed(self):
+        """
+        Somebody sent us something, process it and send stuff back?
+        """
+        rdebug('relation-joined/changed invoked')
+        self.set_state('{relation_name}.present')
+        self.set_state('{relation_name}.notify')
+
+    @reactive.hook('{requires:storpool-presence}-relation-{departed,broken}')
+    def gone_away(self):
+        """
+        Nobody wants to talk to us any more...
+        """
+        rdebug('relation-departed/broken invoked')
+        self.remove_state('{relation_name}.present')
+        self.remove_state('{relation_name}.notify')
+        self.remove_state('{relation_name}.notify-new')

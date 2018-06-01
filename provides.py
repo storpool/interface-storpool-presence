@@ -22,44 +22,31 @@ class StorPoolPresenceProvides(reactive.RelationBase):
     """
     scope = reactive.scopes.GLOBAL
 
-    @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
-    def changed_new(self):
+    @reactive.hook('{provides:storpool-presence}-relation-joined')
+    def joined(self):
         """
         Somebody new came in, announce our presence to them if able.
         """
-        self.changed(True)
-
-    @reactive.hook('{provides:storpool-presence}-relation-{joined,changed}')
-    def changed_current(self):
-        """
-        Somebody we already know... but still, announce, maybe?
-        """
-        self.changed(False)
-
-    def changed(self, joined):
-        """
-        Let the other layers know that another charm wants to receive
-        notifications from us.
-        """
-        rdebug('relation-joined/changed, setting the notify state to '
-               'kick something off')
+        rdebug('relation-joined/changed invoked')
+        self.set_state('{relation_name}.present')
         self.set_state('{relation_name}.notify')
-        if joined:
-            self.set_state('{relation_name}.notify-joined')
+        self.set_state('{relation_name}.notify-joined')
 
-        conv = self.conversation()
-        mach_id = conv.get_remote('cinder_machine_id')
-        if mach_id is not None:
-            rdebug('- got a Cinder machine id: {cid}'.format(cid=mach_id))
-            parts = mach_id.split('/')
-            if len(parts) == 3 and parts[1] == 'lxd':
-                rdebug('- and it is a container...')
-                if parts[0] == sputils.get_machine_id():
-                    rdebug('- and it is ours!')
-                    unitdata.kv().set(kvdata.KEY_LXD_NAME, mach_id)
-                    self.set_state('{relation_name}.process-lxd-name')
-                else:
-                    rdebug('- but it is not ours ({mid} vs {oid})'
-                           .format(mid=mach_id, oid=sputils.get_machine_id()))
-            else:
-                rdebug('- but it is not a container')
+    @reactive.hook('{provides:storpool-presence}-relation-changed')
+    def changed(self):
+        """
+        Somebody sent us something, process it and send stuff back?
+        """
+        rdebug('relation-joined/changed invoked')
+        self.set_state('{relation_name}.present')
+        self.set_state('{relation_name}.notify')
+
+    @reactive.hook('{provides:storpool-presence}-relation-{departed,broken}')
+    def gone_away(self):
+        """
+        Nobody wants to talk to us any more...
+        """
+        rdebug('relation-departed/broken invoked')
+        self.remove_state('{relation_name}.present')
+        self.remove_state('{relation_name}.notify')
+        self.remove_state('{relation_name}.notify-new')
