@@ -2,18 +2,10 @@
 A Juju charm interface for keeping track of the state of another charm's
 units, esp. the state of the unit running on the local node.
 """
-import json
-import platform
-
 from charms import reactive
 
 from spcharms import utils as sputils
 
-STORPOOL_CONF_KEYS = (
-    'storpool_conf',
-    'storpool_version',
-    'storpool_openstack_version',
-)
 
 def rdebug(s):
     """
@@ -28,31 +20,42 @@ class StorPoolPresenceRequires(reactive.RelationBase):
     """
     scope = reactive.scopes.GLOBAL
 
+    def set_notify_states(self, joined):
+        """
+        Set the "notify" state and optionally the "notify-joined" one.
+        """
+        self.set_state('{relation_name}.notify')
+        if joined:
+            self.set_state('{relation_name}.notify-joined')
+
     @reactive.hook('{requires:storpool-presence}-relation-joined')
     def joined(self):
         """
         Somebody new came in, announce our presence to them if able.
         """
-        rdebug('relation-joined/changed invoked')
-        self.set_state('{relation_name}.present')
-        self.set_state('{relation_name}.notify')
-        self.set_state('{relation_name}.notify-new')
+        rdebug('relation-joined invoked')
+        self.set_notify_states(True)
 
     @reactive.hook('{requires:storpool-presence}-relation-changed')
     def changed(self):
         """
-        Somebody sent us something, process it and send stuff back?
+        Somebody sent us something, process it, but don't send anything.
         """
-        rdebug('relation-joined/changed invoked')
-        self.set_state('{relation_name}.present')
-        self.set_state('{relation_name}.notify')
+        rdebug('relation-changed invoked')
+        self.set_notify_states(False)
 
-    @reactive.hook('{requires:storpool-presence}-relation-{departed,broken}')
+    @reactive.hook('{requires:storpool-presence}-relation-departed')
     def gone_away(self):
         """
-        Nobody wants to talk to us any more...
+        Somebody went away, figure out if we need to deconfigure anything.
         """
-        rdebug('relation-departed/broken invoked')
-        self.remove_state('{relation_name}.present')
-        self.remove_state('{relation_name}.notify')
-        self.remove_state('{relation_name}.notify-new')
+        rdebug('relation-departed invoked')
+        self.set_notify_states(False)
+
+    @reactive.hook('{requires:storpool-presence}-relation-broken')
+    def softly_and_suddenly_vanished_away(self):
+        """
+        Everybody went away, we probably need to deconfigure something.
+        """
+        rdebug('relation-broken invoked')
+        self.set_notify_states(False)

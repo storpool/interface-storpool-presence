@@ -62,19 +62,13 @@ class TestStorPoolPresence(unittest.TestCase):
         obj.joined()
         self.check_update_call_count(obj, call_c, {
             'rdebug': 1,
-            'set': 3,
+            'set': 2,
         })
 
         obj.changed()
         self.check_update_call_count(obj, call_c, {
             'rdebug': 1,
-            'set': 2,
-        })
-
-        obj.gone_away()
-        self.check_update_call_count(obj, call_c, {
-            'rdebug': 1,
-            'remove': 3,
+            'set': 1,
         })
 
         obj = testee_r.StorPoolPresenceRequires('storpool-presence:42')
@@ -85,17 +79,11 @@ class TestStorPoolPresence(unittest.TestCase):
         obj.joined()
         self.check_update_call_count(obj, call_c, {
             'rdebug': 1,
-            'set': 3,
+            'set': 2,
         })
 
         obj.changed()
         self.check_update_call_count(obj, call_c, {
             'rdebug': 1,
-            'set': 2,
-        })
-
-        obj.gone_away()
-        self.check_update_call_count(obj, call_c, {
-            'rdebug': 1,
-            'remove': 3,
+            'set': 1,
         })
